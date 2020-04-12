@@ -220,10 +220,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 916058999, guid: 5522d94f6ec25544cbd0389ed589597c, type: 3}
-      propertyPath: speedAround
-      value: 50
-      objectReference: {fileID: 0}
     - target: {fileID: 2084746381766848143, guid: 5522d94f6ec25544cbd0389ed589597c,
         type: 3}
       propertyPath: m_Name
@@ -422,4 +418,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2030459848}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalP
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

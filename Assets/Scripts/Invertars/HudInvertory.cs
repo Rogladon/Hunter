@@ -99,6 +99,10 @@ namespace Hunter {
 			infoPanel.SetActive(false);
 			Destroy(prewThing);
 			t.OffSelectObject();
+			infoName.text = "";
+			infoMainStat.text = "";
+			infoDestription.text = "";
+			infoOtherStat.text = "";
 		}
 
 		public void EnbleInfoThing(Item item) {
