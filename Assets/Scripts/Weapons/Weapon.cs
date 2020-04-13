@@ -23,13 +23,9 @@ namespace Hunter {
 		public Entity entity;
 		public Collider collider;
 
-		private AI ai;
 		void Start() {
 			if(collider == null)
 				collider = GetComponent<Collider>();
-			if (GetComponent<AI>()) {
-				ai = entity.GetComponent<AI>();
-			}
 			typeThing = TypeThing.weapon;
 			InitialDictianory();
 		}
@@ -48,8 +44,8 @@ namespace Hunter {
 			if(entity == _entity || _entity == null) {
 				return;
 			}
-			if(ai != null) {
-				if(_entity != ai.enemy) {
+			if(entity.ai != null) {
+				if(_entity != entity.ai.enemy) {
 					return;
 				}
 			}

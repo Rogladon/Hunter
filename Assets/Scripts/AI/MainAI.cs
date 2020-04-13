@@ -17,7 +17,7 @@ namespace Hunter {
 		}
 
 		public override bool Condition() {
-			if(ai.transformTarget == null && ai.vectorTarget == null && ai.enemies.Count == 0) {
+			if(ai.transformTarget == null && ai.vectorTarget == Vector3.zero && ai.enemies.Count == 0) {
 				return true;
 			}
 			return false;
@@ -25,6 +25,7 @@ namespace Hunter {
 
 		public override void Init() {
 			PrevInit();
+			priority = 0;
 			nameState = "Idle";
 			nextStates.Add(ai.death);
 			nextStates.Add(ai.run);
@@ -51,46 +52,18 @@ namespace Hunter {
 		}
 
 		public override void Behaviour() {
-			if (cowardice) {
-				if (countFriend != ai.friends.Count) {
-					if (countFriend == 0) {
-						ai.transformTarget = ai.friends[0].transform;
-						friend = ai.friends[0];
-					}
-					Debug.Log("Heeeelp");
-					ai.vectorTarget = Vector3.zero;
-					countFriend = ai.friends.Count;
-				}
-				if(Vector3.Distance(entity.position, friend.position) < 15f) {
-					friend.ai.agro = 10;
-					friend.ai.AddEnemies(ai.enemy);
-				}
-			}
+			
 			if (ai.transformTarget != null) {
 				ai.agent.destination = ai.transformTarget.position;
-				//if (ai.agent.isStopped) {
-				if (Vector3.Distance(entity.position, ai.transformTarget.position) < 2f) {
-					if (cowardice && ai.cowardice > 10 && ai.friends.Count != 0) {
-						ai.transformTarget = ai.friends[0].transform;
-					} else {
-						ai.transformTarget = null;
-					}
-				}
-				//}
 				return;
 			} else if (ai.vectorTarget != Vector3.zero) {
 				ai.agent.destination = ai.vectorTarget;
-				//if (ai.agent.isStopped) {
-					if(Vector3.Distance(entity.position, ai.vectorTarget) < 2f){
-						ai.vectorTarget = Vector3.zero;
-					}
-				//}
 				return;
 			}
-			if (cowardice && ai.cowardice <= 10 && ai.transformTarget == null) {
-				ai.agro = 10;
-				ai.cowardice = (int)(entity.hp / entity.healthPoint * 10) - 1;
-			}
+			//if (cowardice && ai.cowardice <= 10 && ai.transformTarget == null) {
+			//	ai.agro = 10;
+			//	ai.cowardice = (int)(entity.hp / entity.healthPoint * 10) - 1;
+			//}
 		}
 
 		public override bool Condition() {
@@ -102,6 +75,7 @@ namespace Hunter {
 
 		public override void Init() {
 			PrevInit();
+			priority = 2;
 			nameState = "Run";
 			nextStates.Add(ai.idle);
 			nextStates.Add(ai.attack);
@@ -127,7 +101,7 @@ namespace Hunter {
 		}
 
 		public override bool Condition() {
-			if(entity.hp <= 0) {
+			if(entity.hp <= 0 || entity.isDeath) {
 				return true;
 			}
 			return false;
@@ -135,6 +109,7 @@ namespace Hunter {
 
 		public override void Init() {
 			PrevInit();
+			priority = 100;
 			nameState = "Death";
 		}
 	}
@@ -166,6 +141,7 @@ namespace Hunter {
 
 		public override void Init() {
 			PrevInit();
+			priority = 1;
 			nameState = "Patrul";
 			nextStates.Add(ai.death);
 			nextStates.Add(ai.idle);
@@ -178,29 +154,34 @@ namespace Hunter {
 		public RunAttack runAttack { get; private set; }
 		public SlashAttack slashAttack { get; private set; }
 		public TacticMove tacticMove { get; private set; }
+		public RunHelp runHelp { get; private set; }
 		int currentEnemy = 0;
 		public Attack(AI _ai, Entity _entity) {
 			ai = _ai;
 			entity = _entity;
-			
+
 		}
 
 		public override void StartState() {
-			enemy = ai.enemies[0];
+			if(ai.enemy == null) {
+				enemy = ai.enemies[0];
+			} else {
+				enemy = ai.enemy;
+			}
 			if (ai.friends.Count != 0) {
-				foreach(var i in ai.friends) {
-					if(Vector3.Distance(entity.position, i.position) < 15f) {
+				foreach (var i in ai.friends) {
+					if (Vector3.Distance(entity.position, i.position) < 15f) {
 						i.ai.AddEnemies(enemy);
 						i.ai.agro = 5;
 					}
 				}
 			}
-		}
-
-		public override void Behaviour() {
 			ai.agent.stoppingDistance = 1.5f;
 			ai.vectorTarget = Vector3.zero;
 			ai.transformTarget = null;
+		}
+
+		public override void Behaviour() {
 			if (currentEnemy >= ai.enemies.Count) currentEnemy = 0;
 			if (ai.enemies.Count != 0) {
 				enemy = ai.enemies[0];
@@ -209,62 +190,45 @@ namespace Hunter {
 			if (ai.friends.Count != 0) {
 				foreach (var i in ai.friends) {
 					if (Vector3.Distance(entity.position, i.position) < 15f) {
-						if (i.ai.enemy == null) {
 							i.ai.AddEnemies(enemy);
-							i.ai.agro = 5;
-						}
+							if(!i.ai.isCowardice)
+								i.ai.agro = 5;
 					}
 				}
 			}
 			if (enemy == null || enemy.isDeath) {
 				ai.enemies.Remove(enemy);
+				ai.enemy = null;
 				return;
 			}
 
-			if (ai.cowardice != 0) {
-				if (entity.hp <= entity.healthPoint * (ai.cowardice/ 10)) {
-					if (ai.friends.Count != 0) {
-						float min = 1000f;
-						Entity friend = entity;
-						foreach (var i in ai.friends) {
-							if(i == null) {
-								ai.friends.Remove(i);
-							}
-							if (Vector3.Distance(entity.position, i.position) < min) {
-								min = Vector3.Distance(entity.position, i.position);
-								friend = i;
-							}
-						}
-						ai.transformTarget = friend.transform;
-					} else {
-						float x = Random.Range(-0.5f, 0.5f);
-						float z = 1;
-						Vector2 p = new Vector2(x, z);
-						Vector2 f = ai._Vector2(enemy.transform.forward);
-						Vector2 r = ai._Vector2(enemy.transform.right);
-						p = p.x * f + p.y * r;
-						p = p * 100;
-						ai.vectorTarget = new Vector3(p.x,0,p.y);
-					}
-					Debug.Log(entity.name + "Aaaaaaaa!!!!");
-					ai.agro = 1;
+
+			List<State> nextState = new List<State>();
+			foreach (State st in currentState.nextStates) {
+				if (st.Condition()) {
+					nextState.Add(st);
+					//Debug.Log(name+": AddState: " + st.nameState);
 				}
 			}
-
-			foreach(State st in currentState.nextStates) {
-				if (st.Condition()) {
+			if (nextState.Count != 0) {
+				State state = nextState[0];
+				foreach (State st in nextState) {
+					if (state.priority < st.priority)
+						state = st;
+				}
+				if (!(currentState.Condition() && currentState.priority > state.priority)) {
 					currentState.EndState();
-					currentState = st;
+					currentState = state;
 					currentState.StartState();
-					Debug.Log("Attack: " + currentState.nameState);
+					Debug.Log(ai.name + ": CurrentState = " + currentState.nameState);
 				}
 			}
 			currentState.Behaviour();
 		}
 
 		public override bool Condition() {
-			if(ai.enemies != null) {
-				if(ai.enemies.Count != 0 && ai.agro > 1) {
+			if(ai.enemies != null || ai.enemy != null) {
+				if((ai.enemies.Count != 0 || ai.enemy != null)&& ai.agro > 1) {
 					return true;
 				}
 			}
@@ -273,6 +237,7 @@ namespace Hunter {
 
 		public override void Init() {
 			PrevInit();
+			priority = 3;
 			nameState = "Attack";
 			nextStates.Add(ai.death);
 			nextStates.Add(ai.idle);
@@ -280,6 +245,8 @@ namespace Hunter {
 			runAttack = new RunAttack(ai, entity, this);
 			slashAttack = new SlashAttack(ai, entity,this);
 			tacticMove = new TacticMove(ai, entity, this);
+			runHelp = new RunHelp(ai, entity, this);
+			runHelp.Init();
 			slashAttack.Init();
 			runAttack.Init();
 			tacticMove.Init();
@@ -314,6 +281,7 @@ namespace Hunter {
 			nameState = "RunAttack";
 			nextStates.Add(attack.slashAttack);
 			nextStates.Add(attack.tacticMove);
+			nextStates.Add(attack.runHelp);
 		}
 
 	}
@@ -346,9 +314,11 @@ namespace Hunter {
 
 		public override void Init() {
 			PrevInit();
+			priority = 0;
 			nameState = "SlashAttack";
 			nextStates.Add(attack.runAttack);
 			nextStates.Add(attack.tacticMove);
+			nextStates.Add(attack.runHelp);
 		}
 	}
 
@@ -402,9 +372,94 @@ namespace Hunter {
 
 		public override void Init() {
 			PrevInit();
+			priority = 1;
 			nameState = "TactcAttack";
 			nextStates.Add(attack.runAttack);
 			nextStates.Add(attack.slashAttack);
+			nextStates.Add(attack.runHelp);
+		}
+	}
+
+	public class RunHelp : State {
+		public Attack attack;
+		Entity friend;
+		public RunHelp(AI _ai, Entity _entity, Attack _attack) {
+			ai = _ai;
+			entity = _entity;
+			attack = _attack;
+		}
+
+		public override void StartState() {
+			Debug.Log("AAAAA");
+			if (ai.mainFriend) {
+				friend = ai.mainFriend;
+				return;
+			}
+			Entity _entity = entity;
+			float d = 1000f;
+			if (ai.friends.Count > 0 && ai.friends != null) {
+				foreach (var i in ai.friends) {
+					if (i == null) {
+						ai.friends.Remove(i);
+						continue;
+					}
+					if (i.isDeath) {
+						ai.friends.Remove(i);
+						continue;
+					}
+					if (Vector3.Distance(entity.position, i.position) > 100f) {
+						ai.friends.Remove(i);
+						continue;
+					}
+					if(Vector3.Distance(entity.position, i.position) < d) {
+						d = Vector3.Distance(entity.position, i.position);
+						_entity = i;
+					}
+				}
+				if (entity != _entity) {
+					friend = _entity;
+				} else {
+					ai.cowardice = 0;
+				}
+			}
+		}
+
+		public override void Behaviour() {
+			if (Vector3.Distance(entity.position, friend.position) > 3f) {
+				ai.agent.destination = friend.position;
+			}
+			if (Vector3.Distance(entity.position, friend.position) < 3f) {
+				
+				if (ai.cowardice <= 10) {
+					ai.agro = 10;
+				} else {
+					ai.agro = 1;
+					ai.isCowardice = true;
+					ai.transformTarget = friend.transform;
+				}
+				ai.cowardice = (int)(entity.hp / entity.healthPoint * 10) - 1;
+			}
+		}
+
+		public override void EndState() {
+			friend.ai.AddEnemies(attack.enemy);
+			Debug.Log("Heeelp");
+		}
+
+		public override bool Condition() {
+			if (ai.cowardice != 0) {
+				if (entity.hp <= entity.healthPoint * (ai.cowardice / 10)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public override void Init() {
+			PrevInit();
+			nameState = "RunHelp";
+			nextStates.Add(attack.slashAttack);
+			priority = 4;
 		}
 	}
 
@@ -412,3 +467,11 @@ namespace Hunter {
 		
 	}
 }
+/*
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */

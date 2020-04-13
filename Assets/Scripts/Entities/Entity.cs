@@ -90,6 +90,9 @@ namespace Hunter {
 			}
 		}
 
+
+		
+
 		public float speed {
 			get {
 				switch (typeSpeed) {
@@ -177,7 +180,7 @@ namespace Hunter {
 				ai.agro++;
 			if(hpSellf != null)
 				hpSellf.text = hp + "/" + healthPoint;
-			Debug.Log(name + ": Aaaa, I took damage " + dmg+". My hp="+hp);
+			//Debug.Log(name + ": Aaaa, I took damage " + dmg+". My hp="+hp);
 		}
 		#endregion
 
@@ -221,9 +224,10 @@ namespace Hunter {
 
 		public void AddBuff(Buff buff) {
 			if(buff == null) {
-				Debug.LogError(name + ": This buff does't exist");
+				//	Debug.LogError(name + ": This buff does't exist");
+				return;
 			}
-			Debug.Log(name + ": I got buff " + buff.name);
+			//Debug.Log(name + ": I got buff " + buff.name);
 			Buff b = Instantiate(buff, buffHolder);
 			buffs.Add(b);
 		}
@@ -232,7 +236,7 @@ namespace Hunter {
 				if(i.nameBuff == buff.nameBuff) {
 					buffs.Remove(i);
 					Destroy(i.gameObject);
-					Debug.Log(name + "I remove buff" + buff.name);
+				//	Debug.Log(name + "I remove buff" + buff.name);
 					return;
 				}
 			}

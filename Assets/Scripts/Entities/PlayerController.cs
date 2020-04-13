@@ -132,7 +132,6 @@ namespace Hunter {
 				}
 				
 			}
-			Debug.Log(jSpeed);
 		}
 		float jSpeed;
 		float fallForce;
